@@ -165,7 +165,7 @@
   .mc-backdrop.open { display: flex; }
 
   .mc-window {
-    width: 820px; max-width: 96vw; max-height: 90vh;
+    width: 984px; max-width: 96vw; max-height: 90vh;
     background: var(--bg2); border: 0.5px solid var(--border);
     border-radius: var(--radius-lg); display: flex; flex-direction: column;
     overflow: hidden; animation: mc-pop 0.15s ease-out;
@@ -253,7 +253,17 @@
   .mc-slot.empty { cursor: default; border-color: transparent; background: transparent; pointer-events: none; }
 
   .mc-slot-img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; flex-shrink: 0; }
+  .mc-slot-img.enchanted {
+    filter: drop-shadow(0 0 3px rgba(180,100,255,0.9)) drop-shadow(0 0 6px rgba(140,60,255,0.6));
+    animation: enchant-pulse 2s ease-in-out infinite;
+  }
+  @keyframes enchant-pulse {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(180,100,255,0.9)) drop-shadow(0 0 6px rgba(140,60,255,0.5)); }
+    50%       { filter: drop-shadow(0 0 5px rgba(200,130,255,1.0)) drop-shadow(0 0 10px rgba(160,80,255,0.8)); }
+  }
   .mc-slot-img-fallback { font-size: 22px; line-height: 1; flex-shrink: 0; }
+  .mc-slot-img-fallback.enchanted { filter: drop-shadow(0 0 4px rgba(180,100,255,0.9)); animation: enchant-pulse 2s ease-in-out infinite; }
+  #d-img.enchanted { filter: drop-shadow(0 0 4px rgba(180,100,255,0.9)) drop-shadow(0 0 8px rgba(140,60,255,0.6)); animation: enchant-pulse 2s ease-in-out infinite; }
   .mc-slot-info { min-width: 0; flex: 1; }
   .mc-slot-name {
     font-size: 13px; font-weight: 500; color: var(--text);
@@ -424,6 +434,36 @@
           </div>
         </div>
 
+        <!-- Craft Cost Card -->
+        <div class="flip-card" id="craft-card" style="display:none;">
+          <div class="flip-card-title" style="justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <i class="ti ti-tools" style="font-size:16px;color:var(--amber);" aria-hidden="true"></i>
+              Craft cost
+            </span>
+            <span id="craft-verdict" style="font-size:12px;font-weight:500;"></span>
+          </div>
+          <!-- Totals first -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+            <div class="flip-result"><div class="label">Craft cost</div><div class="value neu" id="craft-total">—</div></div>
+            <div class="flip-result"><div class="label">Buy price</div><div class="value neu" id="craft-buy-price">—</div></div>
+            <div class="flip-result"><div class="label">Craft profit</div><div class="value" id="craft-profit">—</div></div>
+          </div>
+          <!-- Ingredient list -->
+          <div id="craft-ingredients" style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;font-size:12px;"></div>
+          <!-- 3x3 crafting grid at bottom -->
+          <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Recipe</div>
+              <div id="craft-grid" style="display:grid;grid-template-columns:repeat(3,44px);gap:4px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="craft-loading" style="display:none;padding:10px 0;color:var(--text-muted);font-size:13px;display:flex;align-items:center;gap:8px;">
+          <i class="ti ti-loader-2 spin" aria-hidden="true"></i> Loading recipe...
+        </div>
+
         <!-- Chart -->
         <div class="chart-card">
           <div class="chart-card-header">
@@ -461,7 +501,7 @@
           </div>
 
           <!-- Chart 2 -->
-          <div>
+          <div style="margin-bottom:10px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
               <span style="font-size:11px; color:var(--text-muted); font-weight:500; text-transform:uppercase; letter-spacing:.4px;">Chart 2</span>
               <div style="display:flex; gap:4px; flex-wrap:wrap;" id="chart2-toggles"></div>
@@ -469,6 +509,20 @@
             <div class="chart-wrap">
               <canvas id="priceChart2"></canvas>
               <div id="chart-loading2" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; color:var(--text-hint); font-size:13px; gap:6px; background:rgba(15,17,23,0.6); border-radius:var(--radius);">
+                <i class="ti ti-loader-2 spin" aria-hidden="true"></i> Loading...
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 3 -->
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:11px; color:var(--text-muted); font-weight:500; text-transform:uppercase; letter-spacing:.4px;">Chart 3</span>
+              <div style="display:flex; gap:4px; flex-wrap:wrap;" id="chart3-toggles"></div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="priceChart3"></canvas>
+              <div id="chart-loading3" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; color:var(--text-hint); font-size:13px; gap:6px; background:rgba(15,17,23,0.6); border-radius:var(--radius);">
                 <i class="ti ti-loader-2 spin" aria-hidden="true"></i> Loading...
               </div>
             </div>
@@ -643,7 +697,14 @@ function processBazaar(data) {
   document.getElementById('gs-topsell').textContent = topSell ? topSell.name.split(' ').slice(0, 2).join(' ') : '—';
 
   filterItems();
-  if (activeId) { updateDetail(activeId); calcFlip(); }
+  if (activeId) {
+    updateDetail(activeId); calcFlip();
+    // Refresh craft card with updated prices (use cached recipe)
+    if (activeId in recipeCache && recipeCache[activeId]) {
+      const parsed = parseRecipe(recipeCache[activeId]);
+      if (parsed) renderCraftCard(activeId, parsed, recipeCache[activeId]);
+    }
+  }
 }
 
 function filterItems() {
@@ -717,6 +778,7 @@ function selectItem(id) {
   filterItems();
   updateDetail(id);
   calcFlip();
+  fetchAndRenderCraft(id);
   document.getElementById('detail-panel').classList.add('visible');
   document.getElementById('empty-state').style.display = 'none';
 }
@@ -763,6 +825,7 @@ function updateDetail(id) {
   const img = document.getElementById('d-img');
   if (imgUrl) { img.src = imgUrl; img.style.display = 'block'; }
   else img.style.display = 'none';
+  img.classList.toggle('enchanted', item.id.startsWith('ENCHANTED_'));
   document.getElementById('d-buy').textContent = fmt(item.buyPrice);
   document.getElementById('d-sell').textContent = fmt(item.sellPrice);
   document.getElementById('d-margin').textContent = item.margin.toFixed(2) + '%';
@@ -873,6 +936,7 @@ async function fetchHistory(id, range) {
 
 // ── Chart variables definition ──
 // Each var: { key, label, color, getter(dataPoint) }
+// craftCost is computed dynamically per-point based on ingredient prices at that timestamp
 const CHART_VARS = [
   { key: 'buy',        label: 'Price (buy)',    color: '#1ebd85', getter: d => d.buy ?? d.buyPrice ?? 0 },
   { key: 'minBuy',     label: 'Min (buy)',      color: '#0d8c5f', getter: d => d.minBuy ?? 0 },
@@ -884,14 +948,17 @@ const CHART_VARS = [
   { key: 'maxSell',    label: 'Max (sell)',     color: '#f87171', getter: d => d.maxSell ?? 0 },
   { key: 'sellVolume', label: 'Volume (sell)',  color: '#ec4899', getter: d => d.sellVolume ?? 0 },
   { key: 'sellMoving', label: 'Moving (sell)',  color: '#f9a8d4', getter: d => d.sellMovingWeek ?? 0 },
+  { key: 'craftCost',  label: 'Craft cost',     color: '#f0a330', getter: d => d._craftCost ?? 0 },
 ];
 
 // Default active vars per chart
 let chart1Vars = new Set(['buy', 'sell']);
 let chart2Vars = new Set(['buyVolume', 'sellVolume']);
+let chart3Vars = new Set(['craftCost', 'buy']);
 
 let activeChart = null;
 let activeChart2 = null;
+let activeChart3 = null;
 let lastChartData = null; // { labels, points } — raw data points for re-rendering on toggle
 
 function buildToggleBar(containerId, activeSet, onToggle) {
@@ -914,19 +981,27 @@ function toggleChart1Var(key) {
   if (chart1Vars.has(key)) { if (chart1Vars.size > 1) chart1Vars.delete(key); }
   else chart1Vars.add(key);
   buildToggleBar('chart1-toggles', chart1Vars, 'toggleChart1Var');
-  if (lastChartData) drawDualCharts(lastChartData.labels, lastChartData.points);
+  if (lastChartData) drawTripleCharts(lastChartData.labels, lastChartData.points);
 }
 
 function toggleChart2Var(key) {
   if (chart2Vars.has(key)) { if (chart2Vars.size > 1) chart2Vars.delete(key); }
   else chart2Vars.add(key);
   buildToggleBar('chart2-toggles', chart2Vars, 'toggleChart2Var');
-  if (lastChartData) drawDualCharts(lastChartData.labels, lastChartData.points);
+  if (lastChartData) drawTripleCharts(lastChartData.labels, lastChartData.points);
+}
+
+function toggleChart3Var(key) {
+  if (chart3Vars.has(key)) { if (chart3Vars.size > 1) chart3Vars.delete(key); }
+  else chart3Vars.add(key);
+  buildToggleBar('chart3-toggles', chart3Vars, 'toggleChart3Var');
+  if (lastChartData) drawTripleCharts(lastChartData.labels, lastChartData.points);
 }
 
 function initToggleBars() {
   buildToggleBar('chart1-toggles', chart1Vars, 'toggleChart1Var');
   buildToggleBar('chart2-toggles', chart2Vars, 'toggleChart2Var');
+  buildToggleBar('chart3-toggles', chart3Vars, 'toggleChart3Var');
 }
 
 function makeCrosshairPlugin(otherChartGetter) {
@@ -1014,16 +1089,18 @@ function drawSingleChart(canvasId, loadingId, labels, points, activeSet, chartRe
   return chart;
 }
 
-function drawDualCharts(labels, points) {
+function drawTripleCharts(labels, points) {
   activeChart = drawSingleChart('priceChart', 'chart-loading', labels, points, chart1Vars, activeChart);
   activeChart2 = drawSingleChart('priceChart2', 'chart-loading2', labels, points, chart2Vars, activeChart2);
+  activeChart3 = drawSingleChart('priceChart3', 'chart-loading3', labels, points, chart3Vars, activeChart3);
 }
 
 function renderChart(labels, buys, sells, rawPoints) {
-  // rawPoints is the full data array from API; for live mode we synthesize it
   const points = rawPoints || labels.map((_, i) => ({ buy: buys[i], sell: sells[i] }));
   lastChartData = { labels, points };
-  drawDualCharts(labels, points);
+  // Craft cost injection happens in fetchAndRenderCraft after recipe loaded
+  // For now draw without craft cost (it will be 0 until recipe loads)
+  drawTripleCharts(labels, points);
 }
 
 buildCategoryTabs();
@@ -1051,7 +1128,167 @@ setInterval(() => {
 }, REFRESH_MS);
 
 
-/* ── Minecraft Bazaar Search Modal ── */
+// ── Craft Cost System ──
+const NEU_BASE = 'https://raw.githubusercontent.com/NotEnoughUpdates/NotEnoughUpdates-REPO/master/items/';
+const recipeCache = {}; // { id: recipe|null }
+
+// Parse a NEU recipe slot value like "DIAMOND:160" → { id: 'DIAMOND', qty: 160 }
+function parseSlot(val) {
+  if (!val) return null;
+  const [id, qty] = val.split(':');
+  if (!id) return null;
+  return { id: id.trim(), qty: parseInt(qty) || 1 };
+}
+
+// Sum ingredient quantities across all 9 slots, grouping duplicates
+function parseRecipe(recipe) {
+  if (!recipe) return null;
+  const slots = ['A1','A2','A3','B1','B2','B3','C1','C2','C3'];
+  const slotData = slots.map(s => parseSlot(recipe[s] || ''));
+  const grouped = {};
+  for (const s of slotData) {
+    if (!s) continue;
+    grouped[s.id] = (grouped[s.id] || 0) + s.qty;
+  }
+  return { slots: slotData, ingredients: grouped };
+}
+
+// Calculate craft cost from ingredients using current allItems prices
+function calcCraftCost(ingredients) {
+  let total = 0;
+  let allKnown = true;
+  for (const [id, qty] of Object.entries(ingredients)) {
+    const item = allItems.find(i => i.id === id);
+    if (!item) { allKnown = false; continue; }
+    total += item.buyPrice * qty;
+  }
+  return { total, allKnown };
+}
+
+async function fetchAndRenderCraft(id) {
+  const craftCard = document.getElementById('craft-card');
+  const craftLoading = document.getElementById('craft-loading');
+  craftCard.style.display = 'none';
+  craftLoading.style.display = 'flex';
+
+  // Cache check
+  if (!(id in recipeCache)) {
+    try {
+      const res = await fetch(NEU_BASE + id + '.json');
+      if (!res.ok) { recipeCache[id] = null; }
+      else {
+        const data = await res.json();
+        recipeCache[id] = data.recipe || null;
+      }
+    } catch(e) { recipeCache[id] = null; }
+  }
+
+  craftLoading.style.display = 'none';
+  const recipe = recipeCache[id];
+  if (!recipe) return; // no recipe, card stays hidden
+
+  const parsed = parseRecipe(recipe);
+  if (!parsed) return;
+
+  renderCraftCard(id, parsed, recipe);
+}
+
+function renderCraftCard(id, parsed, rawRecipe) {
+  const item = allItems.find(i => i.id === id);
+  if (!item) return;
+
+  const craftCard = document.getElementById('craft-card');
+  craftCard.style.display = 'block';
+
+  // 3×3 grid
+  const grid = document.getElementById('craft-grid');
+  const slots = ['A1','A2','A3','B1','B2','B3','C1','C2','C3'];
+  grid.innerHTML = slots.map(s => {
+    const slot = parseSlot(rawRecipe[s] || '');
+    if (!slot) return `<div style="width:44px;height:44px;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;"></div>`;
+    const img = getItemImgUrl(slot.id);
+    const icon = img
+      ? `<img src="${img}" style="width:28px;height:28px;object-fit:contain;image-rendering:pixelated;" onerror="this.style.display='none'">`
+      : `<span style="font-size:18px;">${getItemIcon(slot.id)}</span>`;
+    return `<div style="width:44px;height:44px;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;" title="${slot.id} ×${slot.qty}">
+      ${icon}
+      <span style="position:absolute;bottom:1px;right:3px;font-size:9px;color:var(--amber);font-weight:600;">${slot.qty > 1 ? slot.qty : ''}</span>
+    </div>`;
+  }).join('');
+
+  // Ingredient list
+  const ingEl = document.getElementById('craft-ingredients');
+  const { ingredients } = parsed;
+  const rows = Object.entries(ingredients).map(([ingId, qty]) => {
+    const ingItem = allItems.find(i => i.id === ingId);
+    const price = ingItem ? ingItem.buyPrice : null;
+    const subtotal = price ? price * qty : null;
+    const img = getItemImgUrl(ingId);
+    const icon = img
+      ? `<img src="${img}" style="width:18px;height:18px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;" onerror="this.style.display='none'">`
+      : `<span style="font-size:14px;flex-shrink:0;">${getItemIcon(ingId)}</span>`;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;background:var(--bg3);border-radius:6px;">
+      ${icon}
+      <span style="flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ingId.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())}</span>
+      <span style="color:var(--text-muted);flex-shrink:0;">×${qty.toLocaleString()}</span>
+      <span style="color:var(--green);flex-shrink:0;min-width:70px;text-align:right;">${price ? fmt(price) + '/u' : '<span style="color:var(--text-hint)">N/A</span>'}</span>
+      <span style="color:var(--text);flex-shrink:0;min-width:70px;text-align:right;">${subtotal ? fmt(subtotal) : '—'}</span>
+    </div>`;
+  });
+  ingEl.innerHTML = rows.join('');
+
+  // Totals
+  const { total, allKnown } = calcCraftCost(ingredients);
+  const buyPrice = item.buyPrice;
+  const craftProfit = buyPrice - total; // profit from crafting instead of buying
+  const verdictEl = document.getElementById('craft-verdict');
+  const profitEl = document.getElementById('craft-profit');
+
+  document.getElementById('craft-total').textContent = fmt(total);
+  document.getElementById('craft-buy-price').textContent = fmt(buyPrice);
+  profitEl.textContent = (craftProfit >= 0 ? '+' : '') + fmt(craftProfit);
+  profitEl.className = 'value ' + (craftProfit > 0 ? 'pos' : craftProfit < 0 ? 'neg' : 'neu');
+
+  if (craftProfit > 0) {
+    verdictEl.textContent = `✓ Craft saves ${fmt(craftProfit)}`;
+    verdictEl.style.color = 'var(--green)';
+  } else if (craftProfit < 0) {
+    verdictEl.textContent = `✗ Buy saves ${fmt(-craftProfit)}`;
+    verdictEl.style.color = 'var(--red)';
+  } else {
+    verdictEl.textContent = 'Same price';
+    verdictEl.style.color = 'var(--text-muted)';
+  }
+
+  // Inject craft cost into chart data points for graph display
+  injectCraftCostIntoChart(ingredients);
+}
+
+// Injects _craftCost into lastChartData points by fetching ingredient histories
+// For historical craft cost we need ingredient buy prices at each timestamp —
+// we approximate by scaling current ingredient prices by the ratio of item price change
+async function injectCraftCostIntoChart(ingredients) {
+  if (!lastChartData || !lastChartData.points.length) return;
+  const { points } = lastChartData;
+
+  const item = allItems.find(i => i.id === activeId);
+  if (!item || item.buyPrice === 0) return;
+
+  const { total: currentCraftCost } = calcCraftCost(ingredients);
+  if (currentCraftCost === 0) return;
+
+  // Scale craft cost proportionally to how buy price moved at each point
+  points.forEach(d => {
+    const pointBuy = d.buy ?? d.buyPrice ?? 0;
+    const ratio = item.buyPrice > 0 ? pointBuy / item.buyPrice : 1;
+    d._craftCost = currentCraftCost * ratio;
+  });
+
+  // Always redraw — chart 3 defaults to craftCost + buy
+  drawTripleCharts(lastChartData.labels, lastChartData.points);
+  // Rebuild toggle bars so craftCost button reflects it's now available
+  initToggleBars();
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // BAZAAR_LAYOUT — mirrors the real in-game Bazaar menu structure.
@@ -1304,8 +1541,15 @@ function renderMcCatCol() {
   const col = document.getElementById('mc-cat-col');
   col.innerHTML = Object.entries(BAZAAR_LAYOUT).map(([cat, data]) => {
     const active = mcState.category === cat ? ' active' : '';
+    // Use first available item texture from first subcategory
+    const firstSubcat = Object.values(data.subcategories)[0];
+    const firstId = firstSubcat ? (firstSubcat.items || []).find(id => allItems.find(i => i.id === id)) : null;
+    const imgUrl = firstId ? getItemImgUrl(firstId) : null;
+    const iconHtml = imgUrl
+      ? `<img src="${imgUrl}" style="width:20px;height:20px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;" alt="">`
+      : `<span>${data.icon}</span>`;
     return `<button class="mc-cat-btn${active}" onclick="mcNavCategory('${cat}')">
-      <span>${data.icon}</span><span>${cat}</span>
+      ${iconHtml}<span>${cat}</span>
     </button>`;
   }).join('');
 }
@@ -1327,10 +1571,15 @@ function renderMcContent() {
     const subcats = BAZAAR_LAYOUT[cat].subcategories;
     col.innerHTML = `<div class="mc-subcat-grid">${
       Object.entries(subcats).map(([name, data]) => {
-        // Count how many items from this subcat are actually in the API
         const liveCount = (data.items || []).filter(id => allItems.find(i => i.id === id)).length;
+        // Use the first available item's texture as icon, fall back to emoji
+        const firstId = (data.items || []).find(id => allItems.find(i => i.id === id));
+        const imgUrl = firstId ? getItemImgUrl(firstId) : null;
+        const iconHtml = imgUrl
+          ? `<img src="${imgUrl}" style="width:28px;height:28px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;" alt="">`
+          : `<span class="mc-subcat-icon">${data.icon}</span>`;
         return `<button class="mc-subcat-btn" onclick="mcNavSubcategory('${name.replace(/'/g,"\\'")}')">
-          <span class="mc-subcat-icon">${data.icon}</span>
+          ${iconHtml}
           <span class="mc-subcat-info">
             <span class="mc-subcat-name">${name}</span>
             <span class="mc-subcat-count">${liveCount} items</span>
@@ -1347,11 +1596,13 @@ function renderMcContent() {
     const slots = Array.from({ length: MC_PER_PAGE }, (_, i) => {
       const item = page[i];
       if (!item) return `<div class="mc-slot empty"></div>`;
+      const isEnchanted = item.id.startsWith('ENCHANTED_');
+      const glowClass = isEnchanted ? ' enchanted' : '';
       const imgUrl = getItemImgUrl(item.id);
       const fallbackIcon = getItemIcon(item.id);
       const iconHtml = imgUrl
-        ? `<img class="mc-slot-img" src="${imgUrl}" alt="${item.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mc-slot-img-fallback" style="display:none">${fallbackIcon}</span>`
-        : `<span class="mc-slot-img-fallback">${fallbackIcon}</span>`;
+        ? `<img class="mc-slot-img${glowClass}" src="${imgUrl}" alt="${item.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mc-slot-img-fallback${glowClass}" style="display:none">${fallbackIcon}</span>`
+        : `<span class="mc-slot-img-fallback${glowClass}">${fallbackIcon}</span>`;
       return `<div class="mc-slot" onclick="mcSelectItem('${item.id}')">
         ${iconHtml}
         <span class="mc-slot-info">
