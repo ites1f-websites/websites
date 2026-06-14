@@ -561,8 +561,8 @@
         </div>
 
         <div class="detail-stats">
-          <div class="stat-card"><div class="stat-label">Buy order</div><div class="stat-value" id="d-buy" style="color:var(--green)">—</div></div>
-          <div class="stat-card"><div class="stat-label">Sell order</div><div class="stat-value" id="d-sell" style="color:var(--red)">—</div></div>
+          <div class="stat-card"><div class="stat-label">Sell offer</div><div class="stat-value" id="d-buy" style="color:var(--green)">—</div></div>
+          <div class="stat-card"><div class="stat-label">Buy offer</div><div class="stat-value" id="d-sell" style="color:var(--red)">—</div></div>
           <div class="stat-card"><div class="stat-label">Margin</div><div class="stat-value" id="d-margin">—</div></div>
           <div class="stat-card"><div class="stat-label">Buy volume</div><div class="stat-value" id="d-bvol">—</div></div>
           <div class="stat-card"><div class="stat-label">Sell volume</div><div class="stat-value" id="d-svol">—</div></div>
@@ -649,7 +649,7 @@
         <!-- Order book -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
           <div class="flip-card">
-            <div class="flip-card-title"><i class="ti ti-arrow-down" style="font-size:15px;color:var(--red)" aria-hidden="true"></i> Sell orders</div>
+            <div class="flip-card-title"><i class="ti ti-arrow-up" style="font-size:15px;color:var(--red)" aria-hidden="true"></i> Sell offers</div>
             <table style="width:100%; border-collapse:collapse; font-size:12px;">
               <thead><tr style="color:var(--text-muted); border-bottom:0.5px solid var(--border);">
                 <th style="text-align:left; padding:4px 6px; font-weight:500;">Price / unit</th>
@@ -661,7 +661,7 @@
             </table>
           </div>
           <div class="flip-card">
-            <div class="flip-card-title"><i class="ti ti-arrow-up" style="font-size:15px;color:var(--green)" aria-hidden="true"></i> Buy orders</div>
+            <div class="flip-card-title"><i class="ti ti-arrow-down" style="font-size:15px;color:var(--green)" aria-hidden="true"></i> Buy offers</div>
             <table style="width:100%; border-collapse:collapse; font-size:12px;">
               <thead><tr style="color:var(--text-muted); border-bottom:0.5px solid var(--border);">
                 <th style="text-align:left; padding:4px 6px; font-weight:500;">Price / unit</th>
@@ -699,7 +699,7 @@
           <!-- Totals first -->
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
             <div class="flip-result"><div class="label">Craft cost</div><div class="value neu" id="craft-total">—</div></div>
-            <div class="flip-result"><div class="label">Buy price</div><div class="value neu" id="craft-buy-price">—</div></div>
+            <div class="flip-result"><div class="label">Sell offer</div><div class="value neu" id="craft-buy-price">—</div></div>
             <div class="flip-result"><div class="label">Craft profit</div><div class="value" id="craft-profit">—</div></div>
           </div>
           <!-- Ingredient list -->
@@ -1108,8 +1108,8 @@ function updateDetail(id) {
   }
 
   // Render order books
-  renderOrderBook('sell-orders-body', item.sellSummary, 'sell');
-  renderOrderBook('buy-orders-body', item.buySummary, 'buy');
+  renderOrderBook('sell-orders-body', item.buySummary, 'sell');
+  renderOrderBook('buy-orders-body', item.sellSummary, 'buy');
 }
 
 function renderOrderBook(tbodyId, orders, type) {
