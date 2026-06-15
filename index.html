@@ -1098,7 +1098,9 @@ function updateDetail(id) {
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       if (sorted.length === 0) { renderChart([], [], [], []); return; }
       const labels = sorted.map(d => {
-        const t = new Date(d.timestamp);
+        // Ensure timestamp is parsed as UTC (append Z if missing)
+        const ts = d.timestamp.endsWith('Z') ? d.timestamp : d.timestamp + 'Z';
+        const t = new Date(ts);
         return (activeRange === 'day' || activeRange === 'live' || activeRange === 'hour')
           ? t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           : t.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -1165,7 +1167,8 @@ function loadCustomRange() {
       const sorted = data.filter(d => d.timestamp).sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
       const isShort = ms < 3 * 86400000;
       const labels = sorted.map(d => {
-        const t = new Date(d.timestamp);
+        const ts = d.timestamp.endsWith('Z') ? d.timestamp : d.timestamp + 'Z';
+        const t = new Date(ts);
         return isShort
           ? t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
           : t.toLocaleDateString([], {month:'short', day:'numeric'});
